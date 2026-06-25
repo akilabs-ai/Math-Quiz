@@ -383,7 +383,18 @@
     -webkit-text-stroke: 0.5cqw var(--ink);
     paint-order: stroke fill;
   }
-  #replay-wrap { margin-top: 6cqh; position: relative; z-index: 2; }
+  #result-detail {
+    margin-top: 1.6cqh;
+    display: flex;
+    gap: 6cqw;
+    font-weight: 800;
+    font-size: 5.4cqw;
+    -webkit-text-stroke: 0.5cqw var(--ink);
+    paint-order: stroke fill;
+  }
+  #result-detail .rc-correct { color: #8bef76; }
+  #result-detail .rc-wrong { color: #ff8a8a; }
+  #replay-wrap { margin-top: 5cqh; position: relative; z-index: 2; }
   #confetti {
     position: absolute;
     inset: 0;
@@ -392,7 +403,7 @@
     pointer-events: none;
     z-index: 1;
   }
-  #result-badge, #result-score, #result-message { position: relative; z-index: 2; }
+  #result-badge, #result-score, #result-message, #result-detail { position: relative; z-index: 2; }
 </style>
 </head>
 <body>
@@ -451,6 +462,7 @@
       <canvas id="confetti"></canvas>
       <img id="result-badge" alt="" />
       <div id="result-score">0/10</div>
+      <div id="result-detail"></div>
       <div id="result-message"></div>
       <div id="replay-wrap">
         <button class="btn btn-primary" id="replay-btn">Play Again</button>
@@ -879,6 +891,9 @@
     else { msg = "Don't give up! Try again"; badge = ASSETS.tryAgain; bg = "bg_jungle_lose.png"; }
 
     $("#result-message").textContent = msg;
+    $("#result-detail").innerHTML =
+      '<span class="rc-correct">Correct: ' + score + '</span>' +
+      '<span class="rc-wrong">Wrong: ' + (total - score) + "</span>";
     $("#result-badge").src = badge;
     $("#screen-result").style.backgroundImage = 'url("assets/' + bg + '")';
     showScreen("screen-result");
