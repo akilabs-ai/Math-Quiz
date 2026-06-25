@@ -125,6 +125,7 @@
     font-family: inherit;
     font-weight: 900;
     cursor: pointer;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -137,7 +138,24 @@
     transition: transform .08s ease, filter .08s ease;
   }
   .btn:active { transform: scale(0.94); }
-  .btn.selected { filter: brightness(1.12) drop-shadow(0 0 2.4cqw #ffd34d); transform: scale(1.04); }
+  .btn.selected {
+    filter: brightness(1.16)
+      drop-shadow(0 0 1.1cqw #fff6b0)
+      drop-shadow(0 0 3cqw #ffae00);
+    transform: scale(1.07);
+    z-index: 3;
+  }
+  .sel-check {
+    position: absolute;
+    top: -1.6cqh;
+    right: -1.4cqw;
+    width: 9cqw;
+    aspect-ratio: 1 / 1;
+    background: url("assets/badge_correct.png") center / 100% 100% no-repeat;
+    filter: drop-shadow(0 0.4cqh 0.5cqw rgba(0,0,0,0.35));
+    pointer-events: none;
+    animation: pop .3s ease;
+  }
 
   .grid-ops {
     margin-top: 2.4cqh;
@@ -178,7 +196,20 @@
     aspect-ratio: 1382 / 531;
     font-size: 5.4cqw;
   }
-  #start-wrap { margin-top: 3.5cqh; }
+  #level-actions {
+    margin-top: 5cqh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4cqw;
+  }
+  .btn-back {
+    background-image: url("assets/btn_wood.png");
+    width: 34cqw;
+    aspect-ratio: 1382 / 531;
+    font-size: 5cqw;
+    filter: saturate(0.55) brightness(0.92);
+  }
 
   /* ---- Quiz HUD ---- */
   .hud {
@@ -330,16 +361,61 @@
   .btn-answer.wrong { filter: drop-shadow(0 0 3cqw #ff5a5a) grayscale(0.25) brightness(0.92); }
   .answers.locked .btn-answer { pointer-events: none; }
 
-  /* Jungle mascot (decorative character) */
-  #quiz-mascot {
+  /* Jungle mascot = Hint (50:50) helper */
+  #hint-btn {
     position: absolute;
     left: 2cqw;
     bottom: 1.5cqh;
-    width: 21cqw;
-    pointer-events: none;
-    z-index: 5;
-    filter: drop-shadow(0 1cqh 1cqw rgba(0,0,0,0.25));
+    width: 23cqw;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    z-index: 6;
     animation: pop .45s ease;
+  }
+  #quiz-mascot {
+    display: block;
+    width: 100%;
+    filter: drop-shadow(0 1cqh 1cqw rgba(0,0,0,0.25));
+    transition: transform .12s ease, filter .2s ease;
+  }
+  #hint-btn:active #quiz-mascot { transform: scale(0.92); }
+  #hint-btn.spent { cursor: default; }
+  #hint-btn.spent #quiz-mascot { filter: grayscale(0.85) brightness(0.85); }
+  #hint-btn.bounce #quiz-mascot { animation: hintBounce .45s ease; }
+  #hint-btn.nudge { animation: hintNudge .4s ease; }
+  #hint-count {
+    position: absolute;
+    top: -1.5cqh;
+    right: -1.5cqw;
+    width: 10cqw;
+    aspect-ratio: 1 / 1;
+    background: url("assets/num_btn.png") center / 100% 100% no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 900;
+    font-size: 5.4cqw;
+    -webkit-text-stroke: 0.5cqw var(--ink);
+    paint-order: stroke fill;
+  }
+  @keyframes hintBounce {
+    0% { transform: translateY(0) scale(1); }
+    35% { transform: translateY(-2.6cqh) scale(1.06); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes hintNudge {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-1.4cqw) rotate(-3deg); }
+    75% { transform: translateX(1.4cqw) rotate(3deg); }
+  }
+  .btn-answer.faded {
+    opacity: 0.22;
+    filter: grayscale(0.85);
+    pointer-events: none;
+    transition: opacity .25s ease, filter .25s ease;
   }
 
   /* Feedback badge overlay */
@@ -411,18 +487,25 @@
 
     <img id="stage-bg" src="assets/jungle-background.png" alt="" />
 
-    <!-- ===== START SCREEN ===== -->
+    <!-- ===== START SCREEN (step 1: operation) ===== -->
     <section id="screen-start" class="screen active">
       <h1 class="game-title">Math Quiz</h1>
-      <div class="game-sub">Pick an option and start playing!</div>
+      <div class="game-sub">Choose an operation to play!</div>
 
       <div class="section-label">Operation</div>
       <div class="grid-ops" id="ops"></div>
+    </section>
+
+    <!-- ===== LEVEL SCREEN (step 2: difficulty + start) ===== -->
+    <section id="screen-level" class="screen">
+      <h1 class="game-title">Choose Level</h1>
+      <div class="game-sub" id="level-sub">Operation: Add</div>
 
       <div class="section-label">Level</div>
       <div class="grid-diff" id="diffs"></div>
 
-      <div id="start-wrap">
+      <div id="level-actions">
+        <button class="btn btn-back" id="back-btn">Back</button>
         <button class="btn btn-primary" id="start-btn">Start</button>
       </div>
     </section>
@@ -444,7 +527,10 @@
 
       <div class="answers" id="answers"></div>
 
-      <img id="quiz-mascot" src="assets/mascot_turtle.png" alt="" />
+      <button id="hint-btn" aria-label="Hint: remove one wrong answer">
+        <img id="quiz-mascot" src="assets/mascot_turtle.png" alt="" />
+        <span id="hint-count">3</span>
+      </button>
 
       <div id="feedback"><img id="feedback-img" alt="" /></div>
 
@@ -508,6 +594,8 @@
     paused: false,
     pendingAdvance: false,
     advanceTimer: null,
+    hints: 3,
+    hintsMax: 3,
   };
 
   /* ===== Helpers ===== */
@@ -741,13 +829,15 @@
     opsBox.innerHTML = "";
     OPERATIONS.forEach((op) => {
       const b = document.createElement("button");
-      b.className = "btn btn-op" + (op.text ? " btn-op-text" : "") + (op.id === state.operation ? " selected" : "");
+      const sel = op.id === state.operation;
+      b.className = "btn btn-op" + (op.text ? " btn-op-text" : "") + (sel ? " selected" : "");
       b.dataset.op = op.id;
-      b.innerHTML = '<span class="op-symbol">' + op.symbol + '</span><span class="op-name">' + op.name + "</span>";
+      b.innerHTML = '<span class="op-symbol">' + op.symbol + '</span><span class="op-name">' + op.name + "</span>" + (sel ? '<span class="sel-check"></span>' : "");
       b.addEventListener("click", () => {
         Sound.select();
         state.operation = op.id;
         renderStartScreen();
+        showScreen("screen-level");
       });
       opsBox.appendChild(b);
     });
@@ -756,8 +846,9 @@
     diffBox.innerHTML = "";
     DIFFICULTIES.forEach((d) => {
       const b = document.createElement("button");
-      b.className = "btn btn-diff" + (d.id === state.difficulty ? " selected" : "");
-      b.textContent = d.name;
+      const sel = d.id === state.difficulty;
+      b.className = "btn btn-diff" + (sel ? " selected" : "");
+      b.innerHTML = '<span class="diff-name">' + d.name + "</span>" + (sel ? '<span class="sel-check"></span>' : "");
       b.addEventListener("click", () => {
         Sound.select();
         state.difficulty = d.id;
@@ -765,6 +856,9 @@
       });
       diffBox.appendChild(b);
     });
+
+    const op = OPERATIONS.find((o) => o.id === state.operation);
+    if (op) $("#level-sub").textContent = "Operation: " + op.name;
   }
 
   /* ===== Quiz flow ===== */
@@ -772,6 +866,8 @@
     Sound.confirm();
     state.score = 0;
     state.current = 0;
+    state.hints = state.hintsMax;
+    updateHintUI();
     buildQuestions();
     showScreen("screen-quiz");
     renderQuestion();
@@ -802,6 +898,39 @@
       b.addEventListener("click", () => onAnswer(b, val, q.answer));
       box.appendChild(b);
     });
+  }
+
+  function updateHintUI() {
+    const btn = $("#hint-btn");
+    if (!btn) return;
+    $("#hint-count").textContent = state.hints;
+    btn.classList.toggle("spent", state.hints <= 0);
+  }
+
+  function bounceTurtle(cls) {
+    const btn = $("#hint-btn");
+    btn.classList.remove(cls);
+    void btn.offsetWidth;
+    btn.classList.add(cls);
+  }
+
+  function useHint() {
+    const box = $("#answers");
+    if (state.paused || state.pendingAdvance || box.classList.contains("locked")) return;
+    if (state.hints <= 0) { Sound.wrong(); bounceTurtle("nudge"); return; }
+
+    const q = state.questions[state.current];
+    const wrongs = [...box.children].filter((c) => {
+      const chip = c.querySelector(".answer-chip");
+      return !c.classList.contains("faded") && chip && Number(chip.textContent) !== q.answer;
+    });
+    if (wrongs.length <= 1) { Sound.wrong(); bounceTurtle("nudge"); return; }
+
+    wrongs[rnd(0, wrongs.length - 1)].classList.add("faded");
+    state.hints--;
+    updateHintUI();
+    Sound.select();
+    bounceTurtle("bounce");
   }
 
   function onAnswer(btn, picked, answer) {
@@ -910,6 +1039,8 @@
   Confetti.init();
   $("#start-btn").addEventListener("click", startGame);
   $("#replay-btn").addEventListener("click", () => { Sound.select(); Confetti.stop(); showScreen("screen-start"); });
+  $("#back-btn").addEventListener("click", () => { Sound.select(); showScreen("screen-start"); });
+  $("#hint-btn").addEventListener("click", useHint);
   $("#pause-btn").addEventListener("click", openPause);
   $("#resume-btn").addEventListener("click", resumeGame);
   $("#quit-btn").addEventListener("click", quitGame);
